@@ -23,7 +23,7 @@ export const useRunicAI = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-2.5-pro",
                 contents: prompt,
                 config: {
                     systemInstruction: process.env.MAGE_SYSTEM_PROMPT,
