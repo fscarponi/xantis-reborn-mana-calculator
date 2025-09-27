@@ -3,6 +3,7 @@ import { RUNES, DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
 import AIWizard from './AIWizard';
 import { calculateManaCost, calculateDiceSizeIncrease } from './logic';
+import { useRunicAI } from './useRunicAI';
 
 type Mode = 'standard' | 'orsatti' | 'ai';
 
@@ -141,6 +142,10 @@ const App: React.FC = () => {
   const [isOrsattiAudioPlaying, setIsOrsattiAudioPlaying] = useState<boolean>(false);
   const orsattiAudioRef = useRef<HTMLAudioElement>(null);
   
+  // AI State Lifted
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const { aiResponse, isLoadingAI, aiError, generateSpell } = useRunicAI();
+
   const isOrsattiMode = mode === 'orsatti';
 
   useEffect(() => {
@@ -299,14 +304,25 @@ const App: React.FC = () => {
       <div className="bg-slate-900/80 min-h-screen backdrop-blur-sm">
         <Header mode={mode} onModeChange={handleModeChange} />
         <main className="container mx-auto p-4 md:p-8">
-            {mode === 'ai' ? <AIWizard 
-              highestDieValue={highestDieValue}
-              setHighestDieValue={setHighestDieValue}
-              skillBonus={skillBonus}
-              setSkillBonus={setSkillBonus}
-              skillBonusInput={skillBonusInput}
-              setSkillBonusInput={setSkillBonusInput}
-            /> : renderStandardOrsattiContent()}
+            <div style={{ display: mode !== 'ai' ? 'block' : 'none' }}>
+              {renderStandardOrsattiContent()}
+            </div>
+            <div style={{ display: mode === 'ai' ? 'block' : 'none' }}>
+              <AIWizard 
+                highestDieValue={highestDieValue}
+                setHighestDieValue={setHighestDieValue}
+                skillBonus={skillBonus}
+                setSkillBonus={setSkillBonus}
+                skillBonusInput={skillBonusInput}
+                setSkillBonusInput={setSkillBonusInput}
+                aiPrompt={aiPrompt}
+                setAiPrompt={setAiPrompt}
+                aiResponse={aiResponse}
+                isLoadingAI={isLoadingAI}
+                aiError={aiError}
+                generateSpell={generateSpell}
+              />
+            </div>
         </main>
       </div>
     </div>

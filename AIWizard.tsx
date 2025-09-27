@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { useRunicAI } from './useRunicAI';
+import React, { useMemo } from 'react';
 import { calculateManaCost, calculateDiceSizeIncrease } from './logic';
 import { DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
+import type { AIResponse } from './useRunicAI';
 
 
 interface CardProps {
@@ -23,6 +23,12 @@ interface AIWizardProps {
     setSkillBonus: (value: number) => void;
     skillBonusInput: string;
     setSkillBonusInput: (value: string) => void;
+    aiPrompt: string;
+    setAiPrompt: (value: string) => void;
+    aiResponse: AIResponse | null;
+    isLoadingAI: boolean;
+    aiError: string | null;
+    generateSpell: (prompt: string) => void;
 }
 
 const MagicParameters: React.FC<AIWizardProps> = ({
@@ -62,9 +68,16 @@ const AILoadingAnimation: React.FC = () => (
 );
 
 const AIWizard: React.FC<AIWizardProps> = (props) => {
-    const [aiPrompt, setAiPrompt] = useState<string>('');
-    const { aiResponse, isLoadingAI, aiError, generateSpell } = useRunicAI();
-    const { highestDieValue, skillBonus } = props;
+    const { 
+        aiPrompt, 
+        setAiPrompt, 
+        aiResponse, 
+        isLoadingAI, 
+        aiError, 
+        generateSpell, 
+        highestDieValue, 
+        skillBonus 
+    } = props;
 
     const calculatedCost = useMemo(() => {
         if (!aiResponse) return 0;
