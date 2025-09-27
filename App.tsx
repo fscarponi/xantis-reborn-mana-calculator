@@ -197,7 +197,13 @@ const App: React.FC = () => {
     return Math.max(2, Math.min(skillBonus, 9));
   }, [skillBonus, isOrsattiMode]);
 
-  const handleRuneClick = (rune: string) => {
+  const handleRuneClick = (rune: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    const button = event.currentTarget;
+    button.classList.add('animate-rune-glow');
+    button.addEventListener('animationend', () => {
+        button.classList.remove('animate-rune-glow');
+    }, { once: true });
+
     setSelectedRunes(prev => {
       if (isOrsattiMode) {
         return [...prev, rune];
@@ -290,7 +296,7 @@ const App: React.FC = () => {
             {selectedRunes.length === 0 ? <span className="text-slate-500">Seleziona le rune qui sotto...</span> : selectedRunes.map((rune, index) => <button key={`${rune}-${index}`} onClick={() => handleRemoveRune(index)} title={`Rimuovi ${rune}`} aria-label={`Rimuovi runa ${rune}`} className="group bg-cyan-900/70 text-cyan-200 font-bold py-1 pl-3 pr-2 rounded-full text-lg flex items-center transition-colors hover:bg-red-800/60 hover:text-red-100"><span>{rune}</span><span aria-hidden="true" className="ml-1.5 text-sm opacity-70 group-hover:opacity-100">×</span></button>)}
           </div>
           <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-9 gap-2">
-            {RUNES.map(rune => { const isDisabled = !isOrsattiMode && selectedRunes.length >= maxRunes; return <button key={rune} onClick={() => handleRuneClick(rune)} disabled={isDisabled} className={`p-2 aspect-square rounded-md flex items-center justify-center font-bold text-lg transition-all duration-200 ${isOrsattiMode ? 'bg-slate-700 hover:bg-purple-500' : 'bg-slate-700 hover:bg-slate-600'} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>{rune}</button>; })}
+            {RUNES.map(rune => { const isDisabled = !isOrsattiMode && selectedRunes.length >= maxRunes; return <button key={rune} onClick={(e) => handleRuneClick(rune, e)} disabled={isDisabled} className={`p-2 aspect-square rounded-md flex items-center justify-center font-bold text-lg transition-all duration-200 ${isOrsattiMode ? 'bg-slate-700 hover:bg-purple-500' : 'bg-slate-700 hover:bg-slate-600'} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>{rune}</button>; })}
           </div>
         </Card>
       </div>

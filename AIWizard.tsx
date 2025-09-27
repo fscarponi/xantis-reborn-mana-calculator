@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { calculateManaCost, calculateDiceSizeIncrease } from './logic';
 import { DICE_OPTIONS } from './constants';
@@ -190,7 +189,17 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
                             <div className="space-y-6 flex-grow">
                                 <div>
                                     <h3 className="font-cinzel text-xl text-amber-400 mb-2">Rune Utilizzate</h3>
-                                    <p className="bg-slate-900/50 p-3 rounded-md font-mono text-cyan-300 text-lg tracking-wider">{aiResponse.runes}</p>
+                                    <div className="bg-slate-900/50 p-3 rounded-md font-mono text-cyan-300 text-lg tracking-wider flex flex-wrap gap-x-3 gap-y-1">
+                                        {aiResponse.runes.split(' ').filter(r => r).map((rune, index) => (
+                                            <span
+                                                key={`${rune}-${index}`}
+                                                className="animate-rune-appear"
+                                                style={{ animationDelay: `${index * 100}ms` }}
+                                            >
+                                                {rune}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                                 <div>
                                     <h3 className="font-cinzel text-xl text-amber-400 mb-2">Pronuncia</h3>
