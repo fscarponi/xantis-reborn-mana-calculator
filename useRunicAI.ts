@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 
 export interface AIResponse {
@@ -12,9 +12,34 @@ export const useRunicAI = () => {
     const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
     const [aiError, setAiError] = useState<string | null>(null);
+    const [systemPrompt, setSystemPrompt] = useState<string>('');
+
+    useEffect(() => {
+        if (!process.env.MAGE_SYSTEM_PROMPT) {
+            fetch('/system-prompt.txt')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(text => setSystemPrompt(text))
+                .catch(error => {
+                    console.error('Failed to fetch system prompt:', error);
+                    setAiError("Impossibile caricare le istruzioni per il Mago. Controlla che il file system-prompt.txt sia presente.");
+                });
+        }
+    }, []);
 
     const generateSpell = async (prompt: string) => {
+        const finalSystemPrompt = process.env.MAGE_SYSTEM_PROMPT || systemPrompt;
+
         if (!prompt.trim() || isLoadingAI) return;
+
+        if (!finalSystemPrompt) {
+            setAiError("Le istruzioni per il Mago non sono ancora state caricate. Riprova tra un istante.");
+            return;
+        }
         
         setIsLoadingAI(true);
         setAiError(null);
@@ -23,10 +48,10 @@ export const useRunicAI = () => {
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-pro",
+                model: "gemini-2.5-flash",
                 contents: prompt,
                 config: {
-                    systemInstruction: process.env.MAGE_SYSTEM_PROMPT,
+                    systemInstruction: finalSystemPrompt,
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
