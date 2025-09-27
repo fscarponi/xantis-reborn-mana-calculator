@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { RUNES, DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
 import AIWizard from './AIWizard';
+import { calculateManaCost, calculateDiceSizeIncrease } from './logic';
 
 type Mode = 'standard' | 'orsatti' | 'ai';
 
@@ -222,29 +223,11 @@ const App: React.FC = () => {
 
   const manaCost = useMemo(() => {
     if (isOrsattiMode) return customManaCost;
-    
-    const baseCost = highestDieValue + Math.min(selectedRunes.length,skillBonus);
-    return selectedRunes.reduce((cost, rune) => {
-      if (rune === 'Vas') {
-        return cost * 2;
-      }
-      if (rune === 'Uus') {
-        return cost * 3;
-      }
-      return cost;
-    }, baseCost);
+    return calculateManaCost(highestDieValue, skillBonus, selectedRunes);
   }, [highestDieValue, skillBonus, selectedRunes, isOrsattiMode, customManaCost]);
   
   const diceSizeIncrease = useMemo(() => {
-    return selectedRunes.reduce((increase, rune) => {
-      if (rune === 'Vas') {
-        return increase + 1;
-      }
-      if (rune === 'Uus') {
-        return increase + 2;
-      }
-      return increase;
-    }, 0);
+    return calculateDiceSizeIncrease(selectedRunes);
   }, [selectedRunes]);
 
   const validationStatus = useMemo(() => {
@@ -316,7 +299,14 @@ const App: React.FC = () => {
       <div className="bg-slate-900/80 min-h-screen backdrop-blur-sm">
         <Header mode={mode} onModeChange={handleModeChange} />
         <main className="container mx-auto p-4 md:p-8">
-            {mode === 'ai' ? <AIWizard /> : renderStandardOrsattiContent()}
+            {mode === 'ai' ? <AIWizard 
+              highestDieValue={highestDieValue}
+              setHighestDieValue={setHighestDieValue}
+              skillBonus={skillBonus}
+              setSkillBonus={setSkillBonus}
+              skillBonusInput={skillBonusInput}
+              setSkillBonusInput={setSkillBonusInput}
+            /> : renderStandardOrsattiContent()}
         </main>
       </div>
     </div>
