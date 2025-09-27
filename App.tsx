@@ -309,6 +309,7 @@ const App: React.FC = () => {
             </div>
             <div style={{ display: mode === 'ai' ? 'block' : 'none' }}>
               <AIWizard 
+                isActive={mode === 'ai'}
                 highestDieValue={highestDieValue}
                 setHighestDieValue={setHighestDieValue}
                 skillBonus={skillBonus}
