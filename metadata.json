@@ -1,0 +1,5 @@
+{
+  "name": "Il Fai da te Runico",
+  "description": "Un calcolatore di mana per il tuo gioco di ruolo. Seleziona il tuo dado, il bonus abilità e le rune per calcolare istantaneamente il costo in mana del tuo incantesimo, senza rischiare di trasformare il tuo cervello in una pozzanghera fumante.",
+  "requestFramePermissions": []
+}
