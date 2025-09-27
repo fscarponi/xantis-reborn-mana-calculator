@@ -14,7 +14,7 @@ export const useRunicAI = () => {
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
     const [aiError, setAiError] = useState<string | null>(null);
 
-    const generateSpell = async (prompt: string) => {
+    const generateSpell = async (prompt: string, spellCircle: number) => {
         if (!prompt.trim() || isLoadingAI) return;
 
         if (!MAGE_SYSTEM_PROMPT) {
@@ -26,11 +26,13 @@ export const useRunicAI = () => {
         setAiError(null);
         setAiResponse(null);
 
+        const fullPrompt = `${prompt}\n\nL'incantesimo deve avere un circolo dell'incantesimo pari a ${spellCircle}, quindi deve essere composto esattamente da ${spellCircle} rune.`;
+
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: "gemini-2.5-flash",
-                contents: prompt,
+                contents: fullPrompt,
                 config: {
                     systemInstruction: MAGE_SYSTEM_PROMPT,
                     responseMimeType: "application/json",

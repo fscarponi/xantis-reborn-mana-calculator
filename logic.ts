@@ -1,5 +1,5 @@
-export const calculateManaCost = (highestDieValue: number, skillBonus: number, selectedRunes: string[]): number => {
-    const baseCost = highestDieValue + Math.min(selectedRunes.length, skillBonus);
+export const calculateManaCost = (highestDieValue: number, employedRunicMagic: number, selectedRunes: string[]): number => {
+    const baseCost = highestDieValue + employedRunicMagic;
     return selectedRunes.reduce((cost, rune) => {
       const upperRune = rune.toUpperCase();
       if (upperRune === 'VAS') {

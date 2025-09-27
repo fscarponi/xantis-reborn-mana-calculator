@@ -131,11 +131,15 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('standard');
   const [highestDieValue, setHighestDieValue] = useState<number>(DICE_OPTIONS[3].value);
   const [skillBonus, setSkillBonus] = useState<number>(3);
+  const [spellCircle, setSpellCircle] = useState<number>(3);
+  const [employedRunicMagic, setEmployedRunicMagic] = useState<number>(3);
   const [selectedRunes, setSelectedRunes] = useState<string[]>([]);
   const [customManaCost, setCustomManaCost] = useState<number>(42);
   const [customDiceSizeIncrease, setCustomDiceSizeIncrease] = useState<number>(0);
   
   const [skillBonusInput, setSkillBonusInput] = useState<string>('3');
+  const [spellCircleInput, setSpellCircleInput] = useState<string>('3');
+  const [employedRunicMagicInput, setEmployedRunicMagicInput] = useState<string>('3');
   const [customManaCostInput, setCustomManaCostInput] = useState<string>('42');
   const [customDiceSizeIncreaseInput, setCustomDiceSizeIncreaseInput] = useState<string>('0');
   
@@ -147,6 +151,30 @@ const App: React.FC = () => {
   const { aiResponse, isLoadingAI, aiError, generateSpell } = useRunicAI();
 
   const isOrsattiMode = mode === 'orsatti';
+  
+  useEffect(() => {
+    const maxCircle = Math.max(2, Math.min(9, skillBonus));
+    if (spellCircle > maxCircle) {
+      setSpellCircle(maxCircle);
+      setSpellCircleInput(String(maxCircle));
+    }
+  }, [skillBonus, spellCircle]);
+
+  useEffect(() => {
+    const maxEmployed = skillBonus;
+    if (employedRunicMagic > maxEmployed) {
+        setEmployedRunicMagic(maxEmployed);
+        setEmployedRunicMagicInput(String(maxEmployed));
+    }
+  }, [skillBonus, employedRunicMagic]);
+
+  useEffect(() => {
+    const minEmployed = spellCircle;
+    if (employedRunicMagic < minEmployed) {
+        setEmployedRunicMagic(minEmployed);
+        setEmployedRunicMagicInput(String(minEmployed));
+    }
+  }, [spellCircle, employedRunicMagic]);
 
   useEffect(() => {
     const audio = orsattiAudioRef.current;
@@ -192,11 +220,6 @@ const App: React.FC = () => {
     }
   };
 
-  const maxRunes = useMemo(() => {
-    if (isOrsattiMode) return Infinity; // No limits for Orsatti
-    return Math.max(2, Math.min(skillBonus, 9));
-  }, [skillBonus, isOrsattiMode]);
-
   const handleRuneClick = (rune: string, event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
     button.classList.add('animate-rune-glow');
@@ -208,7 +231,7 @@ const App: React.FC = () => {
       if (isOrsattiMode) {
         return [...prev, rune];
       }
-      if (prev.length < maxRunes) {
+      if (prev.length < spellCircle) {
         return [...prev, rune];
       }
       return prev;
@@ -234,8 +257,8 @@ const App: React.FC = () => {
 
   const manaCost = useMemo(() => {
     if (isOrsattiMode) return customManaCost;
-    return calculateManaCost(highestDieValue, skillBonus, selectedRunes);
-  }, [highestDieValue, skillBonus, selectedRunes, isOrsattiMode, customManaCost]);
+    return calculateManaCost(highestDieValue, employedRunicMagic, selectedRunes);
+  }, [highestDieValue, employedRunicMagic, selectedRunes, isOrsattiMode, customManaCost]);
   
   const diceSizeIncrease = useMemo(() => {
     return calculateDiceSizeIncrease(selectedRunes);
@@ -245,15 +268,15 @@ const App: React.FC = () => {
     if (isOrsattiMode) {
       return { message: "Il potere di Orsatti non conosce vincoli.", color: 'text-purple-400', isValid: true };
     }
-    const count = selectedRunes.length;
-    if (count < 2) {
-      return { message: 'Seleziona almeno 2 rune per creare un incantesimo.', color: 'text-amber-400', isValid: false };
+     if (spellCircle < 2) {
+        return { message: 'Il Circolo Incantesimo deve essere almeno 2.', color: 'text-amber-400', isValid: false };
     }
-    if (count > maxRunes) {
-      return { message: `Troppe rune! Il tuo massimo è ${maxRunes}.`, color: 'text-red-400', isValid: false };
+    const count = selectedRunes.length;
+    if (count !== spellCircle) {
+      return { message: `Seleziona esattamente ${spellCircle} rune per completare l'incantesimo.`, color: 'text-amber-400', isValid: false };
     }
     return { message: `Incantesimo valido con ${count} rune.`, color: 'text-green-400', isValid: true };
-  }, [selectedRunes.length, maxRunes, isOrsattiMode]);
+  }, [selectedRunes.length, spellCircle, isOrsattiMode]);
 
   const renderStandardOrsattiContent = () => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -273,7 +296,41 @@ const App: React.FC = () => {
               <div>
                 <label htmlFor="skill-bonus" className="block text-sm font-medium text-slate-300 mb-1">Valore Magia Runica</label>
                 <input id="skill-bonus" type="number" value={skillBonusInput} onChange={(e) => { setSkillBonusInput(e.target.value); const value = parseInt(e.target.value, 10); setSkillBonus(isNaN(value) ? 0 : value); }} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
-                <p className="text-xs text-slate-400 mt-1">Determina il numero massimo di rune (min 2, max 9).</p>
+                <p className="text-xs text-slate-400 mt-1">Determina il massimo per i campi sottostanti.</p>
+              </div>
+              <div>
+                <label htmlFor="spell-circle" className="block text-sm font-medium text-slate-300 mb-1">Circolo Incantesimo</label>
+                <input 
+                  id="spell-circle" 
+                  type="number" 
+                  value={spellCircleInput} 
+                  min="2"
+                  max={Math.max(2, Math.min(9, skillBonus))}
+                  onChange={(e) => { 
+                    setSpellCircleInput(e.target.value); 
+                    const value = parseInt(e.target.value, 10); 
+                    setSpellCircle(isNaN(value) ? 2 : value); 
+                  }} 
+                  className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" 
+                />
+                <p className="text-xs text-slate-400 mt-1">N. esatto di rune da usare (max {Math.max(2, Math.min(9, skillBonus))}).</p>
+              </div>
+               <div>
+                <label htmlFor="employed-runic-magic" className="block text-sm font-medium text-slate-300 mb-1">Valore Magia Runica Impiegata</label>
+                <input 
+                  id="employed-runic-magic" 
+                  type="number" 
+                  value={employedRunicMagicInput} 
+                  min={spellCircle}
+                  max={skillBonus}
+                  onChange={(e) => { 
+                    setEmployedRunicMagicInput(e.target.value); 
+                    const value = parseInt(e.target.value, 10); 
+                    setEmployedRunicMagic(isNaN(value) ? spellCircle : value); 
+                  }} 
+                  className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" 
+                />
+                <p className="text-xs text-slate-400 mt-1">Determina il costo in mana (min {spellCircle}, max {skillBonus}).</p>
               </div>
             </div>
           </Card>
@@ -296,7 +353,7 @@ const App: React.FC = () => {
             {selectedRunes.length === 0 ? <span className="text-slate-500">Seleziona le rune qui sotto...</span> : selectedRunes.map((rune, index) => <button key={`${rune}-${index}`} onClick={() => handleRemoveRune(index)} title={`Rimuovi ${rune}`} aria-label={`Rimuovi runa ${rune}`} className="group bg-cyan-900/70 text-cyan-200 font-bold py-1 pl-3 pr-2 rounded-full text-lg flex items-center transition-colors hover:bg-red-800/60 hover:text-red-100"><span>{rune}</span><span aria-hidden="true" className="ml-1.5 text-sm opacity-70 group-hover:opacity-100">×</span></button>)}
           </div>
           <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-9 gap-2">
-            {RUNES.map(rune => { const isDisabled = !isOrsattiMode && selectedRunes.length >= maxRunes; return <button key={rune} onClick={(e) => handleRuneClick(rune, e)} disabled={isDisabled} className={`p-2 aspect-square rounded-md flex items-center justify-center font-bold text-lg transition-all duration-200 ${isOrsattiMode ? 'bg-slate-700 hover:bg-purple-500' : 'bg-slate-700 hover:bg-slate-600'} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>{rune}</button>; })}
+            {RUNES.map(rune => { const isDisabled = !isOrsattiMode && selectedRunes.length >= spellCircle; return <button key={rune} onClick={(e) => handleRuneClick(rune, e)} disabled={isDisabled} className={`p-2 aspect-square rounded-md flex items-center justify-center font-bold text-lg transition-all duration-200 ${isOrsattiMode ? 'bg-slate-700 hover:bg-purple-500' : 'bg-slate-700 hover:bg-slate-600'} ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>{rune}</button>; })}
           </div>
         </Card>
       </div>
@@ -322,6 +379,14 @@ const App: React.FC = () => {
                 setSkillBonus={setSkillBonus}
                 skillBonusInput={skillBonusInput}
                 setSkillBonusInput={setSkillBonusInput}
+                spellCircle={spellCircle}
+                setSpellCircle={setSpellCircle}
+                spellCircleInput={spellCircleInput}
+                setSpellCircleInput={setSpellCircleInput}
+                employedRunicMagic={employedRunicMagic}
+                setEmployedRunicMagic={setEmployedRunicMagic}
+                employedRunicMagicInput={employedRunicMagicInput}
+                setEmployedRunicMagicInput={setEmployedRunicMagicInput}
                 aiPrompt={aiPrompt}
                 setAiPrompt={setAiPrompt}
                 aiResponse={aiResponse}

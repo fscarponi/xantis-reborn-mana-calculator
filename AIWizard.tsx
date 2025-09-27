@@ -25,20 +25,37 @@ interface AIWizardProps {
     setSkillBonus: (value: number) => void;
     skillBonusInput: string;
     setSkillBonusInput: (value: string) => void;
+    spellCircle: number;
+    setSpellCircle: (value: number) => void;
+    spellCircleInput: string;
+    setSpellCircleInput: (value: string) => void;
+    employedRunicMagic: number;
+    setEmployedRunicMagic: (value: number) => void;
+    employedRunicMagicInput: string;
+    setEmployedRunicMagicInput: (value: string) => void;
     aiPrompt: string;
     setAiPrompt: (value: string) => void;
     aiResponse: AIResponse | null;
     isLoadingAI: boolean;
     aiError: string | null;
-    generateSpell: (prompt: string) => void;
+    generateSpell: (prompt: string, spellCircle: number) => void;
 }
 
-const MagicParameters: React.FC<Pick<AIWizardProps, 'highestDieValue' | 'setHighestDieValue' | 'skillBonusInput' | 'setSkillBonusInput' | 'setSkillBonus'>> = ({
+const MagicParameters: React.FC<Pick<AIWizardProps, 'highestDieValue' | 'setHighestDieValue' | 'skillBonus' | 'skillBonusInput' | 'setSkillBonusInput' | 'setSkillBonus' | 'spellCircle' | 'setSpellCircle' | 'spellCircleInput' | 'setSpellCircleInput' | 'employedRunicMagic' | 'setEmployedRunicMagic' | 'employedRunicMagicInput' | 'setEmployedRunicMagicInput'>> = ({
     highestDieValue,
     setHighestDieValue,
+    skillBonus,
     skillBonusInput,
     setSkillBonusInput,
-    setSkillBonus
+    setSkillBonus,
+    spellCircle,
+    setSpellCircle,
+    spellCircleInput,
+    setSpellCircleInput,
+    employedRunicMagic,
+    setEmployedRunicMagic,
+    employedRunicMagicInput,
+    setEmployedRunicMagicInput
 }) => (
   <Card>
     <h2 className="font-cinzel text-2xl text-amber-400 mb-4">Parametri Magici</h2>
@@ -52,7 +69,41 @@ const MagicParameters: React.FC<Pick<AIWizardProps, 'highestDieValue' | 'setHigh
       <div>
         <label htmlFor="skill-bonus-ai" className="block text-sm font-medium text-slate-300 mb-1">Valore Magia Runica</label>
         <input id="skill-bonus-ai" type="number" value={skillBonusInput} onChange={(e) => { setSkillBonusInput(e.target.value); const value = parseInt(e.target.value, 10); setSkillBonus(isNaN(value) ? 0 : value); }} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
-        <p className="text-xs text-slate-400 mt-1">Usato per calcolare il costo finale in mana.</p>
+        <p className="text-xs text-slate-400 mt-1">Determina il massimo per i campi sottostanti.</p>
+      </div>
+      <div>
+        <label htmlFor="spell-circle-ai" className="block text-sm font-medium text-slate-300 mb-1">Circolo Incantesimo</label>
+        <input 
+          id="spell-circle-ai" 
+          type="number" 
+          value={spellCircleInput} 
+          min="2"
+          max={Math.max(2, Math.min(9, skillBonus))}
+          onChange={(e) => { 
+            setSpellCircleInput(e.target.value); 
+            const value = parseInt(e.target.value, 10); 
+            setSpellCircle(isNaN(value) ? 2 : value); 
+          }} 
+          className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500" 
+        />
+        <p className="text-xs text-slate-400 mt-1">N. esatto di rune per l'AI (max {Math.max(2, Math.min(9, skillBonus))}).</p>
+      </div>
+       <div>
+        <label htmlFor="employed-runic-magic-ai" className="block text-sm font-medium text-slate-300 mb-1">Valore Magia Runica Impiegata</label>
+        <input 
+          id="employed-runic-magic-ai" 
+          type="number" 
+          value={employedRunicMagicInput} 
+          min={spellCircle}
+          max={skillBonus}
+          onChange={(e) => { 
+            setEmployedRunicMagicInput(e.target.value); 
+            const value = parseInt(e.target.value, 10); 
+            setEmployedRunicMagic(isNaN(value) ? spellCircle : value); 
+          }} 
+          className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500" 
+        />
+        <p className="text-xs text-slate-400 mt-1">Determina il costo in mana (min {spellCircle}, max {skillBonus}).</p>
       </div>
     </div>
   </Card>
@@ -79,7 +130,8 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
         aiError, 
         generateSpell, 
         highestDieValue, 
-        skillBonus 
+        employedRunicMagic,
+        spellCircle
     } = props;
     
     const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -131,8 +183,8 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
     const calculatedCost = useMemo(() => {
         if (!aiResponse) return 0;
         const runes = aiResponse.runes.split(' ').filter(r => r);
-        return calculateManaCost(highestDieValue, skillBonus, runes);
-    }, [aiResponse, highestDieValue, skillBonus]);
+        return calculateManaCost(highestDieValue, employedRunicMagic, runes);
+    }, [aiResponse, highestDieValue, employedRunicMagic]);
 
     const calculatedDiceIncrease = useMemo(() => {
         if (!aiResponse) return 0;
@@ -141,7 +193,7 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
     }, [aiResponse]);
     
     const handleGenerateClick = () => {
-        generateSpell(aiPrompt);
+        generateSpell(aiPrompt, spellCircle);
     };
 
     return (
