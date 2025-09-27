@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
+import { MAGE_SYSTEM_PROMPT } from './ai-constants';
 
 export interface AIResponse {
   runes: string;
@@ -12,32 +13,12 @@ export const useRunicAI = () => {
     const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
     const [aiError, setAiError] = useState<string | null>(null);
-    const [systemPrompt, setSystemPrompt] = useState<string>('');
-
-    useEffect(() => {
-        if (!process.env.MAGE_SYSTEM_PROMPT) {
-            fetch('/system-prompt.txt')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.text();
-                })
-                .then(text => setSystemPrompt(text))
-                .catch(error => {
-                    console.error('Failed to fetch system prompt:', error);
-                    setAiError("Impossibile caricare le istruzioni per il Mago. Controlla che il file system-prompt.txt sia presente.");
-                });
-        }
-    }, []);
 
     const generateSpell = async (prompt: string) => {
-        const finalSystemPrompt = process.env.MAGE_SYSTEM_PROMPT || systemPrompt;
-
         if (!prompt.trim() || isLoadingAI) return;
 
-        if (!finalSystemPrompt) {
-            setAiError("Le istruzioni per il Mago non sono ancora state caricate. Riprova tra un istante.");
+        if (!MAGE_SYSTEM_PROMPT) {
+            setAiError("Le istruzioni per il Mago non sono state caricate correttamente.");
             return;
         }
         
@@ -51,7 +32,7 @@ export const useRunicAI = () => {
                 model: "gemini-2.5-flash",
                 contents: prompt,
                 config: {
-                    systemInstruction: finalSystemPrompt,
+                    systemInstruction: MAGE_SYSTEM_PROMPT,
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
