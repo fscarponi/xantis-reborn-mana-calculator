@@ -128,6 +128,10 @@ const App: React.FC = () => {
   const [customManaCost, setCustomManaCost] = useState<number>(42);
   const [customDiceSizeIncrease, setCustomDiceSizeIncrease] = useState<number>(0);
   
+  const [skillBonusInput, setSkillBonusInput] = useState<string>('3');
+  const [customManaCostInput, setCustomManaCostInput] = useState<string>('42');
+  const [customDiceSizeIncreaseInput, setCustomDiceSizeIncreaseInput] = useState<string>('0');
+  
   const [isOrsattiAudioPlaying, setIsOrsattiAudioPlaying] = useState<boolean>(false);
   const orsattiAudioRef = useRef<HTMLAudioElement>(null);
   
@@ -205,6 +209,7 @@ const App: React.FC = () => {
     if (isOrsattiMode) {
       clearSpell();
       setCustomDiceSizeIncrease(0);
+      setCustomDiceSizeIncreaseInput('0');
     }
     setIsOrsattiMode(prev => !prev);
   };
@@ -212,7 +217,7 @@ const App: React.FC = () => {
   const manaCost = useMemo(() => {
     if (isOrsattiMode) return customManaCost;
     
-    const baseCost = highestDieValue + skillBonus;
+    const baseCost = highestDieValue + Math.min(selectedRunes.length,skillBonus);
     return selectedRunes.reduce((cost, rune) => {
       if (rune === 'Vas') {
         return cost * 2;
@@ -286,8 +291,12 @@ const App: React.FC = () => {
                       <input
                         id="skill-bonus"
                         type="number"
-                        value={skillBonus}
-                        onChange={(e) => setSkillBonus(Number(e.target.value))}
+                        value={skillBonusInput}
+                        onChange={(e) => {
+                          setSkillBonusInput(e.target.value);
+                          const value = parseInt(e.target.value, 10);
+                          setSkillBonus(isNaN(value) ? 0 : value);
+                        }}
                         className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                       />
                       <p className="text-xs text-slate-400 mt-1">Determina il numero massimo di rune (min 2, max 9).</p>
@@ -303,8 +312,12 @@ const App: React.FC = () => {
                 {isOrsattiMode ? (
                   <input
                     type="number"
-                    value={customManaCost}
-                    onChange={(e) => setCustomManaCost(Number(e.target.value))}
+                    value={customManaCostInput}
+                    onChange={(e) => {
+                      setCustomManaCostInput(e.target.value);
+                      const value = parseInt(e.target.value, 10);
+                      setCustomManaCost(isNaN(value) ? 0 : value);
+                    }}
                     aria-label="Costo mana personalizzato"
                     className="w-full bg-slate-900/50 border border-slate-700 rounded-md py-2 px-3 text-white text-6xl font-bold text-center text-cyan-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
@@ -313,7 +326,7 @@ const App: React.FC = () => {
                     className={`text-6xl font-bold text-cyan-300 transition-all duration-300 ${!validationStatus.isValid ? 'opacity-50' : 'opacity-100'}`}
                     title={validationStatus.isValid ? `Costo: ${manaCost}` : 'Crea un incantesimo valido per vedere il costo finale'}
                   >
-                    {manaCost}
+                    {validationStatus.isValid ? manaCost : '??'}
                   </p>
                 )}
                 <p className={`mt-2 text-sm ${validationStatus.color}`}>{validationStatus.message}</p>
@@ -326,8 +339,12 @@ const App: React.FC = () => {
                         <p className="text-xs text-slate-400 mb-2">Inserisci le taglie che desideri</p>
                         <input
                           type="number"
-                          value={customDiceSizeIncrease}
-                          onChange={(e) => setCustomDiceSizeIncrease(Number(e.target.value))}
+                          value={customDiceSizeIncreaseInput}
+                          onChange={(e) => {
+                            setCustomDiceSizeIncreaseInput(e.target.value);
+                            const value = parseInt(e.target.value, 10);
+                            setCustomDiceSizeIncrease(isNaN(value) ? 0 : value);
+                          }}
                           aria-label="Aumento taglia dado personalizzato"
                           className="w-full bg-slate-900/50 border border-slate-700 rounded-md py-1 px-3 text-white text-2xl font-bold text-center text-amber-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
