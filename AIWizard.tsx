@@ -64,46 +64,50 @@ const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) =>
   return (
     <>
       <h2 className="font-cinzel text-2xl text-amber-400 mb-4 text-center">Assistente al Tiro Finale</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="bonus-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Aggiuntivo</label>
-            <select id="bonus-die-select-ai" value={bonusDie} onChange={(e) => setBonusDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-              {diceOptionsWithNone.map(opt => <option key={`bonus-${opt.label}`} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="bond-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Legame</label>
-            <select id="bond-die-select-ai" value={bondDie} onChange={(e) => setBondDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-              {diceOptionsWithNone.map(opt => <option key={`bond-${opt.label}`} value={opt.value}>{opt.label}</option>)}
-            </select>
-          </div>
+      <div className="bg-slate-900/50 border border-slate-700 rounded-md p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label htmlFor="bonus-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Aggiuntivo</label>
+                <select id="bonus-die-select-ai" value={bonusDie} onChange={(e) => setBonusDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                  {diceOptionsWithNone.map(opt => <option key={`bonus-${opt.label}`} value={opt.value}>{opt.label}</option>)}
+                </select>
+            </div>
+            <div>
+                <label htmlFor="bond-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Legame</label>
+                <select id="bond-die-select-ai" value={bondDie} onChange={(e) => setBondDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                  {diceOptionsWithNone.map(opt => <option key={`bond-${opt.label}`} value={opt.value}>{opt.label}</option>)}
+                </select>
+            </div>
         </div>
-        <div className="bg-slate-900/50 border border-slate-700 rounded-md p-4 flex flex-col items-center justify-center h-full">
+
+        <div className="text-center mb-4">
            <p className="text-sm text-slate-400">Formula di Tiro</p>
-           <p className="text-lg font-bold text-amber-300 text-center mb-3">{finalFormula}</p>
-           <button onClick={handleRoll} disabled={bonusDie === 0} title={bonusDie === 0 ? "Seleziona un Dado Aggiuntivo per tirare" : "Tira i dadi!"} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
-             Tira i Dadi!
-           </button>
-           {bonusDie === 0 && <p className="text-xs text-amber-400 mt-2">Seleziona il dado aggiuntivo</p>}
-           {rollResult && (
-             <div className="mt-4 text-center animate-result-appear w-full">
-               <p className="text-sm text-slate-400">Risultato Finale</p>
-               <p className="text-4xl font-bold text-white">{rollResult.total}</p>
-               <p className="text-xs text-slate-400 truncate" title={rollResult.breakdown}>({rollResult.breakdown})</p>
-               {rollResult.history && rollResult.history.length > 0 && (
-                <div className="mt-3 text-left bg-slate-800/50 p-2 rounded-md max-h-32 overflow-y-auto">
-                    <p className="text-xs font-bold text-slate-300 mb-1 sticky top-0 bg-slate-800/50">Cronologia del Tiro:</p>
-                    <ul className="text-xs text-slate-400 space-y-1">
-                    {rollResult.history.map((log, index) => (
-                        <li key={index} className="whitespace-normal">{log}</li>
-                    ))}
-                    </ul>
-                </div>
-               )}
-             </div>
-           )}
+           <p className="text-lg font-bold text-amber-300">{finalFormula}</p>
         </div>
+
+        <button onClick={handleRoll} disabled={bonusDie === 0} title={bonusDie === 0 ? "Seleziona un Dado Aggiuntivo per tirare" : "Tira i dadi!"} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
+            Tira i Dadi!
+        </button>
+        {bonusDie === 0 && <p className="text-xs text-amber-400 mt-2 text-center">Seleziona il dado aggiuntivo</p>}
+
+        {rollResult && (
+         <div className="mt-4 text-center animate-result-appear w-full">
+           <div className="border-t border-slate-700 my-4"></div>
+           <p className="text-sm text-slate-400">Risultato Finale</p>
+           <p className="text-4xl font-bold text-white">{rollResult.total}</p>
+           <p className="text-xs text-slate-400 truncate" title={rollResult.breakdown}>({rollResult.breakdown})</p>
+           {rollResult.history && rollResult.history.length > 0 && (
+            <div className="mt-3 text-left bg-slate-800/50 p-2 rounded-md max-h-32 overflow-y-auto">
+                <p className="text-xs font-bold text-slate-300 mb-1 sticky top-0 bg-slate-800/50">Cronologia del Tiro:</p>
+                <ul className="text-xs text-slate-400 space-y-1">
+                {rollResult.history.map((log, index) => (
+                    <li key={index} className="whitespace-normal">{log}</li>
+                ))}
+                </ul>
+            </div>
+           )}
+         </div>
+        )}
       </div>
     </>
   );
