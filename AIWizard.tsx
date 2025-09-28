@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { calculateManaCost, calculateDiceSizeIncrease, getDiceProgressionString, rollDie } from './logic';
+import { calculateManaCost, calculateDiceSizeIncrease, getDiceProgressionString, performAdvancedRoll } from './logic';
+import type { AdvancedRollResult } from './logic';
 import { DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
 import type { AIResponse } from './useRunicAI';
@@ -21,7 +22,7 @@ interface RollHelperProps {
   baseDiceString: string;
   flatBonus: number;
 }
-type RollResult = { total: number; breakdown: string };
+type RollResult = AdvancedRollResult;
 
 const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) => {
   const [bonusDie, setBonusDie] = useState<number>(0);
@@ -35,8 +36,6 @@ const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) =>
   
   const handleRoll = () => {
     const diceToRoll: { sides: number; label: string }[] = [];
-    // FIX: Explicitly check for null from match to help TypeScript type inference
-    // and avoid `part` being inferred as `never`.
     const baseDiceParts = actualBaseDice.match(/D\d+/g);
     if (baseDiceParts) {
       baseDiceParts.forEach(part => {
@@ -48,12 +47,8 @@ const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) =>
     if (bonusDie > 0) diceToRoll.push({ sides: bonusDie, label: `D${bonusDie} (Aggiuntivo)` });
     if (bondDie > 0) diceToRoll.push({ sides: bondDie, label: `D${bondDie} (Legame)` });
 
-    const rolls = diceToRoll.map(d => ({ ...d, result: rollDie(d.sides) }));
-    const totalFromDice = rolls.reduce((sum, roll) => sum + roll.result, 0);
-    const total = totalFromDice + flatBonus;
-
-    const breakdown = `${rolls.map(r => `${r.result} [${r.label}]`).join(' + ')}${flatBonus > 0 ? ` + ${flatBonus} (Fisso)` : ''}`;
-    setRollResult({ total, breakdown });
+    const result = performAdvancedRoll(diceToRoll, flatBonus);
+    setRollResult(result);
   };
   
   const finalFormula = useMemo(() => {
@@ -87,14 +82,25 @@ const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) =>
         <div className="bg-slate-900/50 border border-slate-700 rounded-md p-4 flex flex-col items-center justify-center h-full">
            <p className="text-sm text-slate-400">Formula di Tiro</p>
            <p className="text-lg font-bold text-amber-300 text-center mb-3">{finalFormula}</p>
-           <button onClick={handleRoll} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
+           <button onClick={handleRoll} disabled={bonusDie === 0} title={bonusDie === 0 ? "Seleziona un Dado Aggiuntivo per tirare" : "Tira i dadi!"} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
              Tira i Dadi!
            </button>
+           {bonusDie === 0 && <p className="text-xs text-amber-400 mt-2">Seleziona il dado aggiuntivo</p>}
            {rollResult && (
              <div className="mt-4 text-center animate-result-appear w-full">
-               <p className="text-sm text-slate-400">Risultato</p>
+               <p className="text-sm text-slate-400">Risultato Finale</p>
                <p className="text-4xl font-bold text-white">{rollResult.total}</p>
                <p className="text-xs text-slate-400 truncate" title={rollResult.breakdown}>({rollResult.breakdown})</p>
+               {rollResult.history && rollResult.history.length > 0 && (
+                <div className="mt-3 text-left bg-slate-800/50 p-2 rounded-md max-h-32 overflow-y-auto">
+                    <p className="text-xs font-bold text-slate-300 mb-1 sticky top-0 bg-slate-800/50">Cronologia del Tiro:</p>
+                    <ul className="text-xs text-slate-400 space-y-1">
+                    {rollResult.history.map((log, index) => (
+                        <li key={index} className="whitespace-normal">{log}</li>
+                    ))}
+                    </ul>
+                </div>
+               )}
              </div>
            )}
         </div>
