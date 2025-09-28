@@ -16,10 +16,10 @@ export const calculateDiceSizeIncrease = (selectedRunes: string[]): number => {
     return selectedRunes.reduce((increase, rune) => {
       const upperRune = rune.toUpperCase();
       if (upperRune === 'VAS') {
-        return increase + 1;
+        return increase + 2;
       }
       if (upperRune === 'UUS') {
-        return increase + 2;
+        return increase + 3;
       }
       return increase;
     }, 0);
