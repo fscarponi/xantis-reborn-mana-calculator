@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { calculateManaCost, calculateDiceSizeIncrease } from './logic';
+import { calculateManaCost, calculateDiceSizeIncrease, getDiceProgressionString, rollDie } from './logic';
 import { DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
 import type { AIResponse } from './useRunicAI';
@@ -16,6 +16,93 @@ const Card: React.FC<CardProps> = ({ children, className = '' }) => (
     {children}
   </div>
 );
+
+interface RollHelperProps {
+  baseDiceString: string;
+  flatBonus: number;
+}
+type RollResult = { total: number; breakdown: string };
+
+const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) => {
+  const [bonusDie, setBonusDie] = useState<number>(0);
+  const [bondDie, setBondDie] = useState<number>(0);
+  const [rollResult, setRollResult] = useState<RollResult | null>(null);
+
+  const actualBaseDice = useMemo(() => {
+    const parts = baseDiceString.split('→');
+    return parts[parts.length - 1].trim();
+  }, [baseDiceString]);
+  
+  const handleRoll = () => {
+    const diceToRoll: { sides: number; label: string }[] = [];
+    // FIX: Explicitly check for null from match to help TypeScript type inference
+    // and avoid `part` being inferred as `never`.
+    const baseDiceParts = actualBaseDice.match(/D\d+/g);
+    if (baseDiceParts) {
+      baseDiceParts.forEach(part => {
+        const sides = parseInt(part.substring(1), 10);
+        if (!isNaN(sides)) diceToRoll.push({ sides, label: `D${sides}` });
+      });
+    }
+
+    if (bonusDie > 0) diceToRoll.push({ sides: bonusDie, label: `D${bonusDie} (Aggiuntivo)` });
+    if (bondDie > 0) diceToRoll.push({ sides: bondDie, label: `D${bondDie} (Legame)` });
+
+    const rolls = diceToRoll.map(d => ({ ...d, result: rollDie(d.sides) }));
+    const totalFromDice = rolls.reduce((sum, roll) => sum + roll.result, 0);
+    const total = totalFromDice + flatBonus;
+
+    const breakdown = `${rolls.map(r => `${r.result} [${r.label}]`).join(' + ')}${flatBonus > 0 ? ` + ${flatBonus} (Fisso)` : ''}`;
+    setRollResult({ total, breakdown });
+  };
+  
+  const finalFormula = useMemo(() => {
+    let formula = actualBaseDice;
+    if (bonusDie > 0) formula += ` + D${bonusDie}`;
+    if (bondDie > 0) formula += ` + D${bondDie}`;
+    if (flatBonus > 0) formula += ` + ${flatBonus}`;
+    return formula;
+  }, [actualBaseDice, bonusDie, bondDie, flatBonus]);
+
+  const diceOptionsWithNone = [{ label: 'Nessuno', value: 0 }, ...DICE_OPTIONS];
+  
+  return (
+    <>
+      <h2 className="font-cinzel text-2xl text-amber-400 mb-4 text-center">Assistente al Tiro Finale</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="bonus-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Aggiuntivo</label>
+            <select id="bonus-die-select-ai" value={bonusDie} onChange={(e) => setBonusDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+              {diceOptionsWithNone.map(opt => <option key={`bonus-${opt.label}`} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="bond-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Legame</label>
+            <select id="bond-die-select-ai" value={bondDie} onChange={(e) => setBondDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+              {diceOptionsWithNone.map(opt => <option key={`bond-${opt.label}`} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="bg-slate-900/50 border border-slate-700 rounded-md p-4 flex flex-col items-center justify-center h-full">
+           <p className="text-sm text-slate-400">Formula di Tiro</p>
+           <p className="text-lg font-bold text-amber-300 text-center mb-3">{finalFormula}</p>
+           <button onClick={handleRoll} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
+             Tira i Dadi!
+           </button>
+           {rollResult && (
+             <div className="mt-4 text-center animate-result-appear w-full">
+               <p className="text-sm text-slate-400">Risultato</p>
+               <p className="text-4xl font-bold text-white">{rollResult.total}</p>
+               <p className="text-xs text-slate-400 truncate" title={rollResult.breakdown}>({rollResult.breakdown})</p>
+             </div>
+           )}
+        </div>
+      </div>
+    </>
+  );
+};
+
 
 interface AIWizardProps {
     isActive: boolean;
@@ -192,6 +279,10 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
         return calculateDiceSizeIncrease(runes);
     }, [aiResponse]);
     
+    const diceProgressionString = useMemo(() => {
+        return getDiceProgressionString(highestDieValue, calculatedDiceIncrease);
+    }, [highestDieValue, calculatedDiceIncrease]);
+
     const handleGenerateClick = () => {
         generateSpell(aiPrompt, spellCircle);
     };
@@ -234,7 +325,13 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
                                 {calculatedDiceIncrease > 0 && (
                                     <div className="bg-slate-900/50 p-4 rounded-md text-center">
                                         <h3 className="font-cinzel text-sm text-amber-400 mb-1">Aumento Taglia Dado</h3>
-                                        <p className="text-4xl font-bold text-amber-300">+{calculatedDiceIncrease}</p>
+                                        <p className="text-3xl font-bold text-amber-300">+{calculatedDiceIncrease}</p>
+                                        <p className="text-lg font-bold text-amber-300 mt-1">
+                                            {diceProgressionString}
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-2">
+                                            Ricorda di aggiungere al tiro il dado legame (se usato) e il Valore Magia Runica Impiegata ({employedRunicMagic}).
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -291,6 +388,12 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
                                     <h3 className="font-cinzel text-xl text-amber-400 mb-2">Spiegazione</h3>
                                     <p className="text-slate-400 text-sm">{aiResponse.explanation}</p>
                                 </div>
+                            </div>
+                            <div className="mt-8 border-t border-slate-700 pt-6">
+                                <RollHelper 
+                                    baseDiceString={diceProgressionString}
+                                    flatBonus={employedRunicMagic}
+                                />
                             </div>
                         </div>
                     ) : (
