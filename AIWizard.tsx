@@ -1,117 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { calculateManaCost, calculateDiceSizeIncrease, getDiceProgressionString, performAdvancedRoll } from './logic';
-import type { AdvancedRollResult } from './logic';
+import { calculateManaCost, calculateDiceSizeIncrease, getDiceProgressionString } from './logic';
 import { DICE_OPTIONS } from './constants';
 import type { DiceOption } from './constants';
 import type { AIResponse } from './useRunicAI';
 import { generateAudio } from './tts';
-
-
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-}
-
-const Card: React.FC<CardProps> = ({ children, className = '' }) => (
-  <div className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 shadow-lg ${className}`}>
-    {children}
-  </div>
-);
-
-interface RollHelperProps {
-  baseDiceString: string;
-  flatBonus: number;
-}
-type RollResult = AdvancedRollResult;
-
-const RollHelper: React.FC<RollHelperProps> = ({ baseDiceString, flatBonus }) => {
-  const [bonusDie, setBonusDie] = useState<number>(0);
-  const [bondDie, setBondDie] = useState<number>(0);
-  const [rollResult, setRollResult] = useState<RollResult | null>(null);
-
-  const actualBaseDice = useMemo(() => {
-    const parts = baseDiceString.split('→');
-    return parts[parts.length - 1].trim();
-  }, [baseDiceString]);
-  
-  const handleRoll = () => {
-    const diceToRoll: { sides: number; label: string }[] = [];
-    const baseDiceParts = actualBaseDice.match(/D\d+/g);
-    if (baseDiceParts) {
-      baseDiceParts.forEach(part => {
-        const sides = parseInt(part.substring(1), 10);
-        if (!isNaN(sides)) diceToRoll.push({ sides, label: `D${sides}` });
-      });
-    }
-
-    if (bonusDie > 0) diceToRoll.push({ sides: bonusDie, label: `D${bonusDie} (Aggiuntivo)` });
-    if (bondDie > 0) diceToRoll.push({ sides: bondDie, label: `D${bondDie} (Legame)` });
-
-    const result = performAdvancedRoll(diceToRoll, flatBonus);
-    setRollResult(result);
-  };
-  
-  const finalFormula = useMemo(() => {
-    let formula = actualBaseDice;
-    if (bonusDie > 0) formula += ` + D${bonusDie}`;
-    if (bondDie > 0) formula += ` + D${bondDie}`;
-    if (flatBonus > 0) formula += ` + ${flatBonus}`;
-    return formula;
-  }, [actualBaseDice, bonusDie, bondDie, flatBonus]);
-
-  const diceOptionsWithNone = [{ label: 'Nessuno', value: 0 }, ...DICE_OPTIONS];
-  
-  return (
-    <>
-      <h2 className="font-cinzel text-2xl text-amber-400 mb-4 text-center">Assistente al Tiro Finale</h2>
-      <div className="bg-slate-900/50 border border-slate-700 rounded-md p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div>
-                <label htmlFor="bonus-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Aggiuntivo</label>
-                <select id="bonus-die-select-ai" value={bonusDie} onChange={(e) => setBonusDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                  {diceOptionsWithNone.map(opt => <option key={`bonus-${opt.label}`} value={opt.value}>{opt.label}</option>)}
-                </select>
-            </div>
-            <div>
-                <label htmlFor="bond-die-select-ai" className="block text-sm font-medium text-slate-300 mb-1">Dado Legame</label>
-                <select id="bond-die-select-ai" value={bondDie} onChange={(e) => setBondDie(Number(e.target.value))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                  {diceOptionsWithNone.map(opt => <option key={`bond-${opt.label}`} value={opt.value}>{opt.label}</option>)}
-                </select>
-            </div>
-        </div>
-
-        <div className="text-center mb-4">
-           <p className="text-sm text-slate-400">Formula di Tiro</p>
-           <p className="text-lg font-bold text-amber-300">{finalFormula}</p>
-        </div>
-
-        <button onClick={handleRoll} disabled={bonusDie === 0} title={bonusDie === 0 ? "Seleziona un Dado Aggiuntivo per tirare" : "Tira i dadi!"} className="w-full bg-amber-600 text-white font-bold py-2 px-4 rounded-md transition-colors hover:bg-amber-500 disabled:bg-slate-600 disabled:opacity-50">
-            Tira i Dadi!
-        </button>
-        {bonusDie === 0 && <p className="text-xs text-amber-400 mt-2 text-center">Seleziona il dado aggiuntivo</p>}
-
-        {rollResult && (
-         <div className="mt-4 text-center animate-result-appear w-full">
-           <div className="border-t border-slate-700 my-4"></div>
-           <p className="text-sm text-slate-400">Risultato Finale</p>
-           <p className="text-4xl font-bold text-white">{rollResult.total}</p>
-           <p className="text-xs text-slate-400 truncate" title={rollResult.breakdown}>({rollResult.breakdown})</p>
-           {rollResult.history && rollResult.history.length > 0 && (
-            <div className="mt-3 text-left bg-slate-800/50 p-2 rounded-md max-h-32 overflow-y-auto">
-                <p className="text-xs font-bold text-slate-300 mb-1 sticky top-0 bg-slate-800/50">Cronologia del Tiro:</p>
-                <ul className="text-xs text-slate-400 space-y-1">
-                {rollResult.history.map((log, index) => (
-                    <li key={index} className="whitespace-normal">{log}</li>
-                ))}
-                </ul>
-            </div>
-           )}
-         </div>
-        )}
-      </div>
-    </>
-  );
-};
+import Card from './components/Card';
+import RollHelper from './components/RollHelper';
 
 
 interface AIWizardProps {
@@ -403,6 +297,7 @@ const AIWizard: React.FC<AIWizardProps> = (props) => {
                                 <RollHelper 
                                     baseDiceString={diceProgressionString}
                                     flatBonus={employedRunicMagic}
+                                    mode="ai"
                                 />
                             </div>
                         </div>
